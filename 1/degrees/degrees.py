@@ -62,27 +62,37 @@ def main():
     load_data(directory)
     print("Data loaded.")
 
-    source = person_id_for_name(input("Name: "))
-    if source is None:
-        sys.exit("Person not found.")
-    target = person_id_for_name(input("Name: "))
-    if target is None:
-        sys.exit("Person not found.")
+    while True:
+        source = None
+        while not source:
+            source = person_id_for_name(input("Name: "))
+            if source is None:
+                print("Person not found.")
+        target = None
+        while not target:
+            target = person_id_for_name(input("Name: "))
+            if target is None:
+                print("Person not found.")
 
-    path = shortest_path(source, target)
+        print("Finding shortest path...")
+        path = shortest_path(source, target)
 
-    if path is None:
-        print("Not connected.")
-    else:
-        degrees = len(path)
-        print(f"{degrees} degrees of separation.")
-        path = [(None, source)] + path
-        for i in range(degrees):
-            person1 = people[path[i][1]]["name"]
-            person2 = people[path[i + 1][1]]["name"]
-            movie = movies[path[i + 1][0]]["title"]
-            print(f"{i + 1}: {person1} and {person2} starred in {movie}")
+        if path is None:
+            print("Not connected.")
+        else:
+            degrees = len(path)
+            print(f"{degrees} degrees of separation.")
+            path = [(None, source)] + path
+            for i in range(degrees):
+                person1 = people[path[i][1]]["name"]
+                person2 = people[path[i + 1][1]]["name"]
+                movie = movies[path[i + 1][0]]["title"]
+                print(f"{i + 1}: {person1} and {person2} starred in {movie}")
 
+        print("Would you like to find another path? (y/n)")
+        if input().lower() != "y":
+            sys.exit("Goodbye!")
+            break
 
 def shortest_path(source, target):
     """
@@ -100,13 +110,13 @@ def shortest_path(source, target):
         # No path
         if(frontier.empty()):
             return None
-        
+
+
         node = frontier.remove()
         explored.add(node.state)
-        
+
         neighbors = neighbors_for_person(node.state)
         for  movie, star in neighbors:
-
             if star == target:
                 curr = Node(state=star,action=movie,parent=node)
                 path = []
@@ -157,7 +167,6 @@ def neighbors_for_person(person_id):
     for movie_id in movie_ids:
         for person_id in movies[movie_id]["stars"]:
             neighbors.add((movie_id, person_id))
-    print(len(neighbors))
     return neighbors
 
 
