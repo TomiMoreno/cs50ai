@@ -2,16 +2,23 @@ export const X = "X";
 export const O = "O";
 export const EMPTY = null;
 
-const PLAYING = "playing";
+export const PLAYING = "playing";
+export const TIE = "tie";
 
 export type Player = typeof X | typeof O | typeof EMPTY;
 export type Board = Player[][];
-export type status = typeof PLAYING | Player;
+export type Status = typeof PLAYING | typeof TIE | Player;
+export type Winner = {
+  player: Player;
+  from: { row: number; column: number };
+  to: { row: number; column: number };
+};
 
 export default class TicTacToe {
   private board: Board;
   private player: Player;
-  private status: status;
+  private status: Status;
+  private winner?: Winner;
 
   constructor(size: number) {
     console.log("Creating board of size: ", size);
@@ -33,53 +40,34 @@ export default class TicTacToe {
     return board;
   };
 
-  // We asume there's only one winner
+  // This is a helper function to check lines for a winner
+  private checkLine = (line: Player[]): Player => {
+    const possibleWinner = line[0];
+    for (const cell of line) {
+      if (cell !== possibleWinner) {
+        return EMPTY;
+      }
+    }
+    return possibleWinner;
+  };
+
+  // Use it in your checkWinner function
   checkWinner = (board: Board): Player => {
-    let possibleWinner: Player = board[0][0];
+    // Diagonals, Rows and Columns checks simplified
+    const diagonalsAndLines = [
+      // Diagonals
+      board.map((_, i) => board[i][i]),
+      board.map((_, i) => board[i][board.length - i - 1]),
+      // Rows
+      ...board,
+      // Columns
+      ...board[0].map((_, i) => board.map((row) => row[i])),
+    ];
 
-    // Check diagonal
-    for (let i = 0; i < board.length; i++) {
-      if (board[i][i] !== possibleWinner) {
-        possibleWinner = EMPTY;
-        break;
-      }
-    }
-    if (possibleWinner) return possibleWinner;
-
-    possibleWinner = board[0][board.length - 1];
-    for (let i = 0; i < board.length; i++) {
-      if (board[i][board.length - 1 - i] !== possibleWinner) {
-        possibleWinner = EMPTY;
-        break;
-      }
-    }
-
-    if (possibleWinner) return possibleWinner;
-    // Check rows
-    for (let i = 0; i < board.length; i++) {
-      possibleWinner = board[i][0];
-      for (let j = 0; j < board[i].length; j++) {
-        if (board[i][j] !== possibleWinner) {
-          possibleWinner = EMPTY;
-          break;
-        }
-      }
-      if (possibleWinner) {
-        return possibleWinner;
-      }
-    }
-
-    // Check columns
-    for (let i = 0; i < board.length; i++) {
-      possibleWinner = board[0][i];
-      for (let j = 0; j < board[i].length; j++) {
-        if (board[j][i] !== possibleWinner) {
-          possibleWinner = EMPTY;
-          break;
-        }
-      }
-      if (possibleWinner) {
-        return possibleWinner;
+    for (const line of diagonalsAndLines) {
+      const winner = this.checkLine(line);
+      if (winner !== EMPTY) {
+        return winner;
       }
     }
 
@@ -114,12 +102,24 @@ export default class TicTacToe {
     this.board[row][column] = this.player;
 
     const winner = this.checkWinner(this.board);
+    const isBoardFull = this.isBoardFull();
 
-    if (winner) {
-      this.status = winner;
+    if (winner || isBoardFull) {
+      this.status = winner || TIE;
     } else {
       this.player = this.player === X ? O : X;
     }
+  };
+
+  isBoardFull = () => {
+    for (const row of this.board) {
+      for (const cell of row) {
+        if (cell === EMPTY) {
+          return false;
+        }
+      }
+    }
+    return true;
   };
 
   reset = () => {

@@ -20,14 +20,26 @@ function TicTacToe({ size = 1 }: { size: number }) {
     setGameState(tictactoe.getGameState());
   };
 
+  const isPlaying = status === "playing";
+
+  const currentTurn = isPlaying
+    ? `Player ${player}'s turn`
+    : winner
+    ? `${winner} wins!`
+    : "Tie!";
   return (
     <div className="  flex flex-auto flex-col items-center gap-3">
-      <h1 className="text-4xl">{status}</h1>
-      {winner ? (
-        <h2 className="text-2xl">{winner} wins!</h2>
-      ) : (
-        <h2 className="text-2xl">{player}'s turn</h2>
-      )}
+      <h1
+        className={`text-4xl ${
+          isPlaying
+            ? "text-black"
+            : winner === X
+            ? "text-red-600"
+            : "text-blue-600"
+        }`}
+      >
+        {currentTurn}
+      </h1>
       <div
         className={`grid justify-items-center content-center gap-4 w-full md:w-[500px] lg:w-[700px]`}
         style={{
