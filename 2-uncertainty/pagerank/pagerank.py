@@ -11,6 +11,7 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("Usage: python pagerank.py corpus")
     corpus = crawl(sys.argv[1])
+    print(corpus)
     ranks = sample_pagerank(corpus, DAMPING, SAMPLES)
     print(f"PageRank Results from Sampling (n = {SAMPLES})")
     for page in sorted(ranks):
@@ -59,7 +60,7 @@ def transition_model(corpus, page, damping_factor):
     """
     current_page_links = corpus[page]
     base_prob = (1 - damping_factor) / len(corpus)
-    current_links_prob = damping_factor / len(current_page_links)
+    current_links_prob = damping_factor / len(current_page_links) if len(current_page_links) > 0 else 0
 
     prob = {}
     for p in corpus:
@@ -68,7 +69,6 @@ def transition_model(corpus, page, damping_factor):
             prob[p] += current_links_prob
     
     return prob
-
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -101,6 +101,8 @@ def iterate_pagerank(corpus, damping_factor):
     Return a dictionary where keys are page names, and values are
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
+    
+    A page that has no links at all should be interpreted as having one link for every page in the corpus (including itself).
     """
     page_rank = {page: 1 / len(corpus) for page in corpus}
     
@@ -108,9 +110,12 @@ def iterate_pagerank(corpus, damping_factor):
         new_rank = {}
         for page in page_rank:
             new_rank[page] = (1 - damping_factor) / len(corpus)
-            links_to_page = [p for p in corpus if page in corpus[p]]
-            for link in links_to_page:
-                new_rank[page] += damping_factor * page_rank[link] / len(corpus[link])
+            for other_page in corpus:
+                if len(corpus[other_page]) == 0:
+                    new_rank[page] += damping_factor * page_rank[other_page] / len(corpus)
+                if page in corpus[other_page]:
+                    new_rank[page] += damping_factor * page_rank[other_page] / len(corpus[other_page])
+                
         if all(abs(new_rank[page] - page_rank[page]) < 0.001 for page in page_rank):
             return new_rank
         page_rank = new_rank
