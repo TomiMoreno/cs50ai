@@ -139,8 +139,85 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    p = 1
 
+    for person in people:
+        gene_probabilities = calculate_gene_probabilities(people, person, one_gene, two_genes)
+        trait_probabilities = calculate_trait_probabilities(one_gene, two_genes, person, have_trait)
+        person_gene = 2 if person in two_genes else 1 if person in one_gene else 0
+        p *= gene_probabilities[person_gene] * trait_probabilities
+
+        
+
+
+    return p
+
+
+
+def calculate_gene_probabilities(people, person, one_gene, two_genes):
+    """
+        Calculate the probability of a person having a gene based on the gene's inheritance
+        If the person has no parents, the probability is PROBS["gene"]
+        If the person has parents, the probability is based on the probability of the parents having the gene
+        each parent will pass one of their two genes on to their child randomly, and there is a PROBS["mutation"] chance that it mutates
+    """
+
+    if(people[person] == None):
+        return PROBS["gene"]
+
+    if(people[person]["mother"] == None and people[person]["father"] == None):
+        return PROBS["gene"]
+    else:
+        mother = people[person]["mother"]
+        father = people[person]["father"]
+        
+        person_num_of_genes = 1 if person in one_gene else 2 if person in two_genes else 0
+        father_num_of_genes = 1 if father in one_gene else 2 if father in two_genes else 0
+        mother_num_of_genes = 1 if mother in one_gene else 2 if mother in two_genes else 0
+        p = calculateGeneBasedOnParents(father_num_of_genes, mother_num_of_genes, person_num_of_genes)
+
+
+
+        return {
+         person_num_of_genes: p
+        }
+
+
+        
+def calculateGeneBasedOnParents(father_copies, mother_copies, child_expected_genes):
+    """
+        Calculate the probability of a child having a gene based on the number of genes the parents have
+        father_copies: the number of genes the father has
+        mother_copies: the number of genes the mother has
+        child_expected_genes: the expected number of genes the child will have
+    """ 
+    all_combinations = [(True, False), (True, True), (False, False), (False, True)]
+    mutation_prob = 0.01
+    father_genes_set = [True if i < father_copies else False for i in range(2)]
+    mother_genes_set = [True if i < mother_copies else False for i in range(2)]
+    availableCombinations = set(list(itertools.product(father_genes_set, mother_genes_set)))
+    availableCombinations = [x for x in availableCombinations if sum(x) == child_expected_genes]
+
+    all_combinations = [x for x in all_combinations if sum(x) == child_expected_genes]
+
+    p = 0
+    for (fatherShouldPassGene, motherShouldPassGene) in all_combinations:
+        no_mutation_prob = 1- mutation_prob
+        father_passes_gene_prob = father_copies / 2 * (no_mutation_prob) + (2 - father_copies) / 2 * mutation_prob
+        mother_passes_gene_prob = mother_copies / 2 * (no_mutation_prob) + (2 - mother_copies) / 2 * mutation_prob
+
+        father_prob = father_passes_gene_prob if fatherShouldPassGene else 1 - father_passes_gene_prob
+        mother_prob = mother_passes_gene_prob if motherShouldPassGene else 1 - mother_passes_gene_prob
+        no_mutation_prob = father_prob * mother_prob
+
+
+        p += no_mutation_prob
+    return p
+
+
+        
+def calculate_trait_probabilities(one_gene, two_genes, person, have_trait):
+    return PROBS["trait"][2 if person in two_genes else 1 if person in one_gene else 0][person in have_trait]
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
     """
@@ -149,7 +226,11 @@ def update(probabilities, one_gene, two_genes, have_trait, p):
     Which value for each distribution is updated depends on whether
     the person is in `have_gene` and `have_trait`, respectively.
     """
-    raise NotImplementedError
+    for person in probabilities:
+        gene = 2 if person in two_genes else 1 if person in one_gene else 0
+        trait = person in have_trait
+        probabilities[person]["gene"][gene] += p
+        probabilities[person]["trait"][trait] += p
 
 
 def normalize(probabilities):
@@ -157,7 +238,11 @@ def normalize(probabilities):
     Update `probabilities` such that each probability distribution
     is normalized (i.e., sums to 1, with relative proportions the same).
     """
-    raise NotImplementedError
+    for person in probabilities:
+        for field in probabilities[person]:
+            total = sum(probabilities[person][field].values())
+            for value in probabilities[person][field]:
+                probabilities[person][field][value] /= total
 
 
 if __name__ == "__main__":
