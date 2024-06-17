@@ -142,10 +142,9 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     p = 1
 
     for person in people:
-        gene_probabilities = calculate_gene_probabilities(people, person, one_gene, two_genes)
-        trait_probabilities = calculate_trait_probabilities(one_gene, two_genes, person, have_trait)
-        person_gene = 2 if person in two_genes else 1 if person in one_gene else 0
-        p *= gene_probabilities[person_gene] * trait_probabilities
+        gene_probability = calculate_gene_probabilities(people, person, one_gene, two_genes)
+        trait_probability = calculate_trait_probabilities(one_gene, two_genes, person, have_trait)
+        p *= gene_probability * trait_probability
 
         
 
@@ -176,12 +175,7 @@ def calculate_gene_probabilities(people, person, one_gene, two_genes):
         mother_num_of_genes = 1 if mother in one_gene else 2 if mother in two_genes else 0
         p = calculateGeneBasedOnParents(father_num_of_genes, mother_num_of_genes, person_num_of_genes)
 
-
-
-        return {
-         person_num_of_genes: p
-        }
-
+        return p
 
         
 def calculateGeneBasedOnParents(father_copies, mother_copies, child_expected_genes):
@@ -192,16 +186,10 @@ def calculateGeneBasedOnParents(father_copies, mother_copies, child_expected_gen
         child_expected_genes: the expected number of genes the child will have
     """ 
     all_combinations = [(True, False), (True, True), (False, False), (False, True)]
-    mutation_prob = 0.01
-    father_genes_set = [True if i < father_copies else False for i in range(2)]
-    mother_genes_set = [True if i < mother_copies else False for i in range(2)]
-    availableCombinations = set(list(itertools.product(father_genes_set, mother_genes_set)))
-    availableCombinations = [x for x in availableCombinations if sum(x) == child_expected_genes]
-
-    all_combinations = [x for x in all_combinations if sum(x) == child_expected_genes]
-
+    mutation_prob = PROBS["mutation"]
+    valid_combinations = [x for x in all_combinations if sum(x) == child_expected_genes]
     p = 0
-    for (fatherShouldPassGene, motherShouldPassGene) in all_combinations:
+    for (fatherShouldPassGene, motherShouldPassGene) in valid_combinations:
         no_mutation_prob = 1- mutation_prob
         father_passes_gene_prob = father_copies / 2 * (no_mutation_prob) + (2 - father_copies) / 2 * mutation_prob
         mother_passes_gene_prob = mother_copies / 2 * (no_mutation_prob) + (2 - mother_copies) / 2 * mutation_prob
@@ -210,12 +198,9 @@ def calculateGeneBasedOnParents(father_copies, mother_copies, child_expected_gen
         mother_prob = mother_passes_gene_prob if motherShouldPassGene else 1 - mother_passes_gene_prob
         no_mutation_prob = father_prob * mother_prob
 
-
         p += no_mutation_prob
     return p
 
-
-        
 def calculate_trait_probabilities(one_gene, two_genes, person, have_trait):
     return PROBS["trait"][2 if person in two_genes else 1 if person in one_gene else 0][person in have_trait]
 
